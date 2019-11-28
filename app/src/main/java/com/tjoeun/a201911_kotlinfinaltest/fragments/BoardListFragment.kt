@@ -23,6 +23,7 @@ class BoardListFragment : BaseFragment() {
     var dateFilterStartDate:Calendar? = null
 
     var blackList = ArrayList<BlackList>()
+    var filteredBlackList = ArrayList<BlackList>()
     var blackListAdapter:BlackListAdapter? = null
 
     override fun onCreateView(
@@ -61,10 +62,12 @@ class BoardListFragment : BaseFragment() {
                     dateFilterStartDate = Calendar.getInstance()
                 }
 
-                dateFilterStartDate?.set(year, month, dayOfMonth)
+                dateFilterStartDate?.set(year, month, dayOfMonth, 0, 0, 0)
 
                 val sdf = SimpleDateFormat("yyyy.MM.dd ~")
                 dateFilterTxt.text = sdf.format(dateFilterStartDate?.time)
+
+                filterBlackLists()
 
             }, 2019, Calendar.NOVEMBER, 1)
             datePickerDialog.show()
@@ -81,9 +84,32 @@ class BoardListFragment : BaseFragment() {
 
     override fun setValues() {
 
-        blackListAdapter = BlackListAdapter(mContext!!, blackList)
+        blackListAdapter = BlackListAdapter(mContext!!, filteredBlackList)
         boardListView.adapter = blackListAdapter
 
+    }
+
+    fun filterBlackLists() {
+
+        filteredBlackList.clear()
+
+        for (bl in blackList) {
+            if (dateFilterStartDate == null) {
+//                날짜 필터가 설정되지 않았다면
+//                무조건 화면에 보여지라고 필터된 목록에 추가.
+                filteredBlackList.add(bl)
+            }
+            else {
+//                날짜 필터가 설정되어 있다면
+//                게시글의 작성일자 >= 날짜필터 면 보이도록 목록에 추가.
+                if (bl.createdAt.timeInMillis >= dateFilterStartDate!!.timeInMillis) {
+                    filteredBlackList.add(bl)
+                }
+
+            }
+        }
+
+        blackListAdapter?.notifyDataSetChanged()
     }
 
     fun getBlackListFromServer() {
@@ -104,6 +130,7 @@ class BoardListFragment : BaseFragment() {
 
                     activity!!.runOnUiThread {
                         blackListAdapter?.notifyDataSetChanged()
+                        filterBlackLists()
                     }
 
                 }
